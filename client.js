@@ -5,6 +5,9 @@
 
 var dgram = require('dgram');
 var sio = require('socket.io-client');
+//var host = 'n8.io';
+var host = '127.0.0.1';
+var port = 8080;
 
 /**
  * Constants.
@@ -45,7 +48,7 @@ var udpSockets = {};
  * Connect to the socket.io server.
  */
 
-var socket = sio.connect('http://127.0.0.1:8080');
+var socket = sio.connect('http://' + host + ':' + port);
 
 socket.on('connect', function () {
   console.error('socket connected!');
@@ -56,7 +59,7 @@ socket.on('udp', function (data) {
   var msg = new Buffer(data.msg, 'binary');
   var port = data.port;
   var socket = udpSockets[port];
-  socket.send(msg, 0, msg.length, port, '127.0.0.1');
+  socket.send(msg, 0, msg.length, port, host);
 });
 
 socket.on('disconnect', function () {
