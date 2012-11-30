@@ -59,7 +59,9 @@ socket.on('udp', function (data) {
   var msg = new Buffer(data.msg, 'binary');
   var port = data.port;
   var socket = udpSockets[port];
-  socket.send(msg, 0, msg.length, port, host);
+
+  // relay the packet to "localhost" at the specified UDP port
+  socket.send(msg, 0, msg.length, port, '127.0.0.1');
 });
 
 socket.on('disconnect', function () {
