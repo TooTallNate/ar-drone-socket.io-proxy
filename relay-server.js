@@ -3,7 +3,6 @@
  * Module dependencies.
  */
 
-var http = require('http');
 var dgram = require('dgram');
 var sio = require('socket.io');
 
