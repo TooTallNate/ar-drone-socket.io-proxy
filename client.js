@@ -5,8 +5,8 @@
 
 var dgram = require('dgram');
 var sio = require('socket.io-client');
-var arHost = '127.0.0.1';
-var relayHost = 'n8.io';
+var arHost = process.env.AR_HOST || '127.0.0.1';
+var relayHost = process.env.RELAY_HOST || 'n8.io';
 var port = 8080;
 
 /**
