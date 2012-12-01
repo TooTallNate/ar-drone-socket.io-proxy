@@ -108,6 +108,7 @@ io.sockets.on('connection', function (_socket) {
   if (buffer.length > 0) {
     console.log('flushing %d "message" events', buffer.length);
     buffer.forEach(sendMessage);
+    buffer.splice(0);
   }
 
   /*
