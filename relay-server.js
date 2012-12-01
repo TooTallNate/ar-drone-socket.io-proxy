@@ -93,8 +93,8 @@ io.sockets.on('connection', function (_socket) {
   console.log('"connection"', socket);
 
   socket.on('udp', function (obj) {
-    var msg = new Buffer(data.msg, 'binary');
-    var port = data.port;
+    var msg = new Buffer(obj.msg, 'binary');
+    var port = obj.port;
     var socket = udpServers[port];
     socket.send(msg, 0, msg.length, port, '127.0.0.1');
   });
