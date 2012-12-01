@@ -10,9 +10,17 @@ var sio = require('socket.io');
  * Constants.
  */
 
-var NAVDATA_PORT = 5554;
-var VIDEO_PORT   = 5555;
-var AT_PORT      = 5556;
+var PORTS = {
+  FTP: 5551,
+  AUTH: 5552,
+  VIDEO_RECORDER: 5553,
+  NAVDATA: 5554,
+  VIDEO: 5555,
+  AT: 5556,
+  RAW_CAPTURE: 5557,
+  PRINTF: 5558,
+  CONTROL: 5559
+};
 
 var udpServers = {};
 
@@ -32,8 +40,8 @@ var buffer = [];
  * Setup UDP servers.
  */
 
-;[ NAVDATA_PORT, VIDEO_PORT, AT_PORT ].forEach(function (port) {
-
+Object.keys(PORTS).forEach(function (name) {
+  var port = PORTS[name];
   var server = dgram.createSocket('udp4');
 
   server.on("message", function (msg, rinfo) {
