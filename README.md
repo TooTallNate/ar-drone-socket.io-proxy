@@ -15,6 +15,7 @@ This setup is broken up into 3 parts:
 
 
 ### Relay Server
+----------------
 
 The "relay server" is a node.js script that binds to TCP port `8080` and UDP ports
 `5551` through `5559`. It awaits for an AR.Drone to connect to the TCP port over
@@ -56,6 +57,7 @@ Leave it running while "droning"...
 
 
 ### The AR.Drone
+----------------
 
 I used velcro to strap the MiFi to the top of the indoor hull of the AR.Drone.
 
@@ -90,3 +92,10 @@ The drone itself is somewhat tedious to set up. This process can be improved..
   1. Telnet to `192.168.1.3`. This is the AR.drone in "client" mode connected to the MiFi.
   1. cd to `/data` and fire up the relay client on the drone: `RELAY_HOST=1.2.3.4 ./node client.js </dev/null >/dev/null 2>&1 &` (replace `1.2.3.4` with the resolved IP of your "relay server")
   1. `exit` the telnet session. At this point, the Drone is ready to receive commands from the "relay server".
+
+
+### The "client"
+----------------
+
+The "client" is the computer that is going to be sending commands to the AR.Drone
+over the MiFi connection.
