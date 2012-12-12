@@ -22,7 +22,7 @@ The relay server should be a remote server where you have access to UDP ports
 I chose to set the relay server up on my Mac Mini at my home, and forward the
 ports through my Time Capsule using Airport Utility:
 
-![](http://f.cl.ly/items/0u1q3s411702422o3116/Screen%20Shot%202012-12-11%20at%208.33.25%20PM.png)
+![](http://f.cl.ly/items/1p051N1V3I431d1k0u21/Screen%20Shot%202012-12-11%20at%208.46.59%20PM.png)
 
 For the relaying to work, you _also_ must forward TCP port `8080`, which is the
 port where the UDP messages received are relayed to the drone over an HTTP
