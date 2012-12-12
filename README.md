@@ -4,13 +4,31 @@ ar-drone-socket.io-proxy
 This client-server package is part of my DroneOlympics entry, where I attempt
 to control an AR.Drone over a Verizon 4G LTE cellular connection.
 
-AT HOME!!!
-----------
+Instructions
+------------
 
-  1. Be sure to fire up the relay-server before beginning!
+This setup is broken up into 3 parts:
 
-Steps to get it going:
-----------------------
+  * An AR.Drone 2.0
+  * A "relay server"
+  * A "client" which will send commands to control the drone
+
+
+### Relay Server
+
+The relay server should be a remote server where you have access to UDP ports
+`5551` through `5559`. These are the ports that the AR.Drone uses to communicate over.
+
+I chose to set the relay server up on my Mac Mini at my home, and forward the
+ports through my Time Capsule using Airport Utility:
+
+![](http://f.cl.ly/items/0u1q3s411702422o3116/Screen%20Shot%202012-12-11%20at%208.33.25%20PM.png)
+
+For the relaying to work, you _also_ must forward TCP port `8080`, which is the
+port where the UDP messages received are relayed to the drone over an HTTP
+transport.
+
+### Steps to get it going
 
   1. Power up AR.Drone
   1. Conncet to access point `ardrone2_058438` on laptop
