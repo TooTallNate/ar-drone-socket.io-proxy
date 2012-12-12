@@ -1,5 +1,6 @@
 {
   "name": "ar-drone-http-proxy",
+  "private: true,
   "version": "0.0.0",
   "description": "Proxy Parrot AR.Drone ports over HTTP. Necessary because the Verizon MiFi 4510L only allows port forwarding over HTTP.",
   "main": "index.js",
