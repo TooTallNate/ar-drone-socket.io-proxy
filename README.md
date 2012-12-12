@@ -1,8 +1,8 @@
 ar-drone-socket.io-proxy
 ========================
 
-This client-server package is part of my DroneOlympics entry, where I attempt
-to control an AR.Drone over a Verizon 4G LTE cellular connection.
+This client-server package is part of my [DroneGames][] 2012 entry, where I
+attempt to control an AR.Drone over a Verizon 4G LTE cellular connection.
 
 Instructions
 ------------
@@ -98,3 +98,6 @@ The drone itself is somewhat tedious to set up. This process can be improved..
 
 The "client" is the computer that is going to be sending commands to the AR.Drone
 over the MiFi connection.
+
+
+[DroneGames]: http://dronegames.co/
