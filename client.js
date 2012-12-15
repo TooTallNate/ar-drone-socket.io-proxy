@@ -13,17 +13,7 @@ var port = 8080;
  * Constants.
  */
 
-var PORTS = {
-  FTP: 5551,
-  AUTH: 5552,
-  VIDEO_RECORDER: 5553,
-  NAVDATA: 5554,
-  VIDEO: 5555,
-  AT: 5556,
-  RAW_CAPTURE: 5557,
-  PRINTF: 5558,
-  CONTROL: 5559
-};
+var PORTS = require('./ports');
 
 var udpSockets = {};
 
@@ -32,7 +22,7 @@ Object.keys(PORTS).forEach(function (name) {
   var server = dgram.createSocket('udp4');
 
   server.on('message', function (msg, rinfo) {
-    console.log('"message"', msg, rinfo);
+    //console.log('"message"', msg, rinfo);
     //console.log(0, msg.toString('binary'));
     var obj = {
       port: port,
@@ -65,6 +55,7 @@ socket.on('connect', function () {
 
 socket.on('udp', function (data) {
   console.error('"udp"', data);
+  //process.stdout.write('.');
   var msg = new Buffer(data.msg, 'binary');
   var port = data.port;
   var socket = udpSockets[port];
