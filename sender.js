@@ -10,6 +10,7 @@
  * Module dependencies.
  */
 
+var net = require('net');
 var dgram = require('dgram');
 var sio = require('socket.io-client');
 
@@ -32,17 +33,20 @@ var relayHost = process.env.RELAY_HOST || 'n8.io';
 var relayPort = parseInt(process.env.RELAY_PORT, 10) || 8080;
 
 /**
- * Map of UDP servers bound to the AR.Drone UDP ports.
+ * Map of TCP/UDP servers bound to the AR.Drone ports.
  */
 
-var udpSockets = {};
+var servers = {};
 
 /**
  * Create the UDP servers.
  */
 
 Object.keys(PORTS).forEach(function (name) {
-  var port = PORTS[name];
+  var data = PORTS[name];
+  if (data.type != 'udp') return;
+
+  var port = data.port;
   var server = dgram.createSocket('udp4');
 
   server.on('message', function (msg, rinfo) {
@@ -51,7 +55,7 @@ Object.keys(PORTS).forEach(function (name) {
       msg: msg.toString('binary')
     };
     console.log('"message":', obj, rinfo);
-    socket.emit('udp', obj);
+    io.emit('udp', obj);
 
     // save the return info so we know who to send UDP packets back to
     server.lastRinfo = rinfo;
@@ -65,23 +69,23 @@ Object.keys(PORTS).forEach(function (name) {
   // bind to the AR.Drone port
   server.bind(port);
 
-  udpSockets[port] = server;
+  servers[port] = server;
 });
 
 /**
  * Connect to the "relay server".
  */
 
-var socket = sio.connect('http://' + relayHost + ':' + relayPort);
+var io = sio.connect('http://' + relayHost + ':' + relayPort);
 
-// we're the "sender client"
-socket.emit('mode', 'sender');
+// this is the "sender client"
+io.emit('mode', 'sender');
 
-socket.on('connect', function () {
+io.on('connect', function () {
   console.log('"relay server" connected!');
 });
 
-socket.on('udp', function (data) {
+io.on('udp', function (data) {
   console.log('"udp"', data);
 
   // construct a Buffer for the UDP packet
@@ -89,7 +93,7 @@ socket.on('udp', function (data) {
 
   // get the UDP server that will send the UDP packet
   var port = data.port;
-  var server = udpSockets[port];
+  var server = servers[port];
 
   // relay the packet back to the UDP port that we last heard from on this port
   var returnAddress = server.lastRinfo.address;
@@ -98,6 +102,6 @@ socket.on('udp', function (data) {
   server.send(msg, 0, msg.length, returnPort, returnAddress);
 });
 
-socket.on('disconnect', function () {
+io.on('disconnect', function () {
   console.log('socket disconnected!');
 });

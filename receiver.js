@@ -9,6 +9,7 @@
  * Module dependencies.
  */
 
+var net = require('net');
 var dgram = require('dgram');
 var sio = require('socket.io-client');
 
@@ -31,53 +32,57 @@ var relayHost = process.env.RELAY_HOST || 'n8.io';
 var relayPort = parseInt(process.env.RELAY_PORT, 10) || 8080;
 
 /**
- * Map of UDP client sockets that will send messages to the AR.Drone ports.
+ * Map of UDP clients and TCP sockets that will send messages to the
+ * AR.Drone ports.
  */
 
-var udpSockets = {};
+var sockets = {};
 
 /**
  * Create the UDP clients.
  */
 
 Object.keys(PORTS).forEach(function (name) {
-  var port = PORTS[name];
-  var server = dgram.createSocket('udp4');
+  var data = PORTS[name];
+  if (data.type != 'udp') return;
 
-  server.on('message', function (msg, rinfo) {
+  var port = data.port;
+  var socket = dgram.createSocket('udp4');
+
+  socket.on('message', function (msg, rinfo) {
     var obj = {
       port: port,
       msg: msg.toString('binary')
     };
     console.log('"message":', obj);
-    socket.emit('udp', obj);
+    io.emit('udp', obj);
   });
 
-  server.on('listening', function () {
-    var address = server.address();
-    console.log('UDP server listening %s:%s', address.address, address.port);
+  socket.on('listening', function () {
+    var address = socket.address();
+    console.log('UDP client listening %s:%s', address.address, address.port);
   });
 
   // bind to a random UDP port
-  server.bind();
+  socket.bind();
 
-  udpSockets[port] = server;
+  sockets[port] = socket;
 });
 
 /**
  * Connect to the "relay server".
  */
 
-var socket = sio.connect('http://' + relayHost + ':' + relayPort);
+var io = sio.connect('http://' + relayHost + ':' + relayPort);
 
 // we're the "receiver client"
-socket.emit('mode', 'receiver');
+io.emit('mode', 'receiver');
 
-socket.on('connect', function () {
+io.on('connect', function () {
   console.log('"relay server" connected!');
 });
 
-socket.on('udp', function (data) {
+io.on('udp', function (data) {
   console.log('"udp"', data);
 
   // construct a Buffer for the UDP packet
@@ -85,12 +90,12 @@ socket.on('udp', function (data) {
 
   // get the UDP server that will send the UDP packet
   var port = data.port;
-  var server = udpSockets[port];
+  var server = sockets[port];
 
   // relay the packet to the specified AR.Drone UDP port
   server.send(msg, 0, msg.length, port, '127.0.0.1');
 });
 
-socket.on('disconnect', function () {
+io.on('disconnect', function () {
   console.log('socket disconnected!');
 });

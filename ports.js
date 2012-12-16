@@ -1,17 +1,17 @@
 
 /**
- * These are the UDP ports used by the AR.Drone as specified
- * by felix's node-ardrone module.
+ * These are the TCP/UDP ports used by the AR.Drone as
+ * specified by felix's node-ar-drone module.
  */
 
 module.exports = {
-  FTP: 5551,            // tcp
-  AUTH: 5552,           // ???
-  VIDEO_RECORDER: 5553, // tcp
-  NAVDATA: 5554,        // udp
-  VIDEO: 5555,          // tcp
-  AT: 5556,             // udp
-  RAW_CAPTURE: 5557,    // tcp
-  PRINTF: 5558,         // ???
-  CONTROL: 5559         // tcp
+  FTP:            { port: 5551, type: 'tcp' },
+  AUTH:           { port: 5552, type: '???' },
+  VIDEO_RECORDER: { port: 5553, type: 'tcp' },
+  NAVDATA:        { port: 5554, type: 'udp' },
+  VIDEO:          { port: 5555, type: 'tcp' },
+  AT:             { port: 5556, type: 'udp' },
+  RAW_CAPTURE:    { port: 5557, type: 'tcp' },
+  PRINTF:         { port: 5558, type: '???' },
+  CONTROL:        { port: 5559, type: 'tcp' }
 };
