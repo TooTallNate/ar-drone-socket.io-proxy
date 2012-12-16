@@ -83,15 +83,18 @@ socket.on('connect', function () {
 
 socket.on('udp', function (data) {
   console.log('"udp"', data);
-  //process.stdout.write('.');
+
+  // construct a Buffer for the UDP packet
   var msg = new Buffer(data.msg, 'binary');
+
+  // get the UDP server that will send the UDP packet
   var port = data.port;
   var server = udpSockets[port];
-  var address = server.lastRinfo.address;
-  port = server.lastRinfo.port;
 
   // relay the packet back to the UDP port that we last heard from on this port
-  server.send(msg, 0, msg.length, port, address);
+  var returnAddress = server.lastRinfo.address;
+  var returnPort = server.lastRinfo.port;
+  server.send(msg, 0, msg.length, returnPort, returnAddress);
 });
 
 socket.on('disconnect', function () {
