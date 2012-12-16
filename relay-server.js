@@ -63,7 +63,7 @@ io.sockets.on('connection', function (socket) {
         // the AR.Drone itself
         if (receiver) {
           // some old receiver socket? try to disconnect...
-          receever.disconnect();
+          receiver.disconnect();
         }
         receiver = socket;
         break;
