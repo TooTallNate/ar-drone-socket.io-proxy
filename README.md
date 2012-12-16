@@ -10,8 +10,8 @@ Instructions
 This setup is broken up into 3 parts:
 
   * The "relay server"
-  * The AR.Drone 2.0 iteself
-  * The "client" which will send commands to control the drone
+  * The AR.Drone 2.0 iteself - the "receiver"
+  * The program which sends commands to control the drone - the "sender"
 
 ----------------
 ### Relay Server
@@ -55,8 +55,8 @@ $ node relay-server.js
 Leave it running while "droning"...
 
 
-----------------
-### The AR.Drone
+-----------------------------
+### The AR.Drone - "receiver"
 
 I used velcro to strap the MiFi to the top of the indoor hull of the AR.Drone.
 
@@ -93,10 +93,10 @@ The drone itself is somewhat tedious to set up. This process can be improved..
   1. `exit` the telnet session. At this point, the Drone is ready to receive commands from the "relay server".
 
 
-----------------
-### The "client"
+-----------------------------
+### The controller - "sender"
 
-The "client" is the computer that is going to be sending commands to the AR.Drone
+The "sender" is the computer that is going to be sending commands to the AR.Drone
 over the MiFi connection.
 
 
