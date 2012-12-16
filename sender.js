@@ -48,17 +48,18 @@ Object.keys(PORTS).forEach(function (name) {
   server.on('message', function (msg, rinfo) {
     var obj = {
       port: port,
-      msg: msg.toString('binary'),
-      rinfo: rinfo
+      msg: msg.toString('binary')
     };
     console.log('"message":', obj);
     socket.emit('udp', obj);
+
+    // save the return info so we know who to send UDP packets back to
+    server.lastRinfo = rinfo;
   });
 
   server.on('listening', function () {
     var address = server.address();
-    console.log('UDP server listening ' +
-        address.address + ':' + address.port);
+    console.log('UDP server listening %s:%s', address.address, address.port);
   });
 
   // bind to the AR.Drone port
@@ -86,9 +87,11 @@ socket.on('udp', function (data) {
   var msg = new Buffer(data.msg, 'binary');
   var port = data.port;
   var server = udpSockets[port];
+  var address = server.lastRinfo.address;
+  port = server.lastRinfo.port;
 
-  // relay the packet to the specified UDP port
-  server.send(msg, 0, msg.length, port, '127.0.0.1');
+  // relay the packet back to the UDP port that we last heard from on this port
+  server.send(msg, 0, msg.length, port, address);
 });
 
 socket.on('disconnect', function () {
