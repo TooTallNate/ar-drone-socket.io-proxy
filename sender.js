@@ -66,12 +66,9 @@ Object.keys(PORTS).forEach(function (name) {
         target: address.target,
         address: address.address,
         buf: data.toString('binary')
-      }, function () {
-        console.log('done writing...');
-        // backpressure...
-        socket.resume();
       });
       socket.pause();
+      // resume upon socket.io "tcp writedone" event
     });
 
     socket.on('end', function () {
@@ -155,7 +152,7 @@ io.on('disconnect', function () {
 });
 
 // TCP-related events
-io.on('tcp data', function (data, fn) {
+io.on('tcp data', function (data) {
   var server = servers[data.target];
   var key = data.address + ':' + data.port;
   var socket = server.sockets[key];
@@ -164,7 +161,11 @@ io.on('tcp data', function (data, fn) {
   try {
     socket.write(buf, function () {
       console.log('done writing...', arguments);
-      fn();
+      io.emit('tcp writedone', {
+        port: data.port,
+        target: data.target,
+        address: data.address
+      });
     });
   } catch (e) {
     console.error(e);
@@ -172,6 +173,7 @@ io.on('tcp data', function (data, fn) {
 });
 
 io.on('tcp end', function (data) {
+  // a TCP socket has sent a FIN packet on the other end
   console.log('"tcp end"', data);
   var server = servers[data.target];
   var key = data.address + ':' + data.port;
@@ -180,11 +182,21 @@ io.on('tcp end', function (data) {
 });
 
 io.on('tcp close', function (data) {
+  // a TCP socket has closed on the other end
   console.log('"tcp close"', data);
   var server = servers[data.target];
   var key = data.address + ':' + data.port;
   var socket = server.sockets[key];
   socket.destroy();
+});
+
+io.on('tcp writedone', function (data, fn) {
+  // a .write() call has finished on the other end. resume the socket
+  console.log('"tcp writedone"', data);
+  var server = servers[data.target];
+  var key = data.address + ':' + data.port;
+  var socket = server.sockets[key];
+  socket.resume();
 });
 
 // UDP-related events

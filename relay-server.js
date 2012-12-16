@@ -103,6 +103,7 @@ io.sockets.on('connection', function (socket) {
     'tcp connect',
     'tcp data',
     'tcp end',
-    'tcp close'
+    'tcp close',
+    'tcp writedone'
   ].forEach(proxyEvent);
 });

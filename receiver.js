@@ -107,12 +107,9 @@ io.on('tcp connect', function (address) {
       target: address.target,
       address: address.address,
       buf: data.toString('binary')
-    }, function () {
-      console.log('done writing...');
-      // backpressure...
-      socket.resume();
     });
     socket.pause();
+    // resume upon socket.io "tcp writedone" event
   });
 
   socket.on('end', function () {
@@ -160,6 +157,14 @@ io.on('tcp close', function (data) {
   var key = port + ':' + data.address + ':' + data.port;
   var socket = sockets[key];
   socket.destroy();
+});
+
+io.on('tcp writedone', function (data) {
+  console.log('"tcp writedone"', data);
+  var port = data.target;
+  var key = port + ':' + data.address + ':' + data.port;
+  var socket = sockets[key];
+  socket.resume();
 });
 
 // UDP-related events
