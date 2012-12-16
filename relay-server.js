@@ -74,24 +74,33 @@ io.sockets.on('connection', function (socket) {
     }
   });
 
-  socket.on('udp', function (obj) {
-    console.log('"udp" event from %j:', socket.relayMode, obj);
-    var target;
-    if (socket === sender) {
-      target = receiver;
-    } else if (socket === receiver) {
-      target = sender;
-    } else {
-      // shouldn't happen...
-      socket.disconnect();
-      return;
-    }
-    if (!target) {
-      // "receiver" or "sender" must not be connected yet...
-      // drop packet on floor...
-      console.log('dropping packet on floor - target not connected');
-      return;
-    }
-    target.emit('udp', obj);
-  });
+  function proxyEvent (event) {
+    socket.on(event, function (data) {
+      console.log('"%s" event from %j:', event, socket.relayMode, data);
+      var target;
+      if (socket === sender) {
+        target = receiver;
+      } else if (socket === receiver) {
+        target = sender;
+      } else {
+        // shouldn't happen...
+        socket.disconnect();
+        return;
+      }
+      if (!target) {
+        // "receiver" or "sender" must not be connected yet...
+        // drop data on floor...
+        console.log('dropping data on floor - target not connected');
+        return;
+      }
+      target.emit(event, data);
+    });
+  }
+
+  [ 'udp',
+    'tcp connect',
+    'tcp data',
+    'tcp end',
+    'tcp close'
+  ].forEach(proxyEvent);
 });

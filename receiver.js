@@ -75,13 +75,82 @@ Object.keys(PORTS).forEach(function (name) {
 
 var io = sio.connect('http://' + relayHost + ':' + relayPort);
 
-// we're the "receiver client"
+// this is the "receiver client"
 io.emit('mode', 'receiver');
 
+// socket.io events
 io.on('connect', function () {
   console.log('"relay server" connected!');
 });
 
+io.on('disconnect', function () {
+  console.log('socket disconnected!');
+});
+
+// TCP-related events
+io.on('tcp connect', function (address) {
+  // for every TCP connection opened, we need to open one locally against the
+  // AR.Drone port and relay all related events back to the "relay server"
+  console.log('"tcp connect"', address);
+  var port = address.target;
+  var key = port + ':' + address.address + ':' + address.port;
+
+  // create a TCP connection to the specified port to the AR.Drone (localhost)
+  var socket = net.connect({ port: port }, function () {
+    console.log('tcp "connect" event from port %d', port);
+  });
+
+  socket.on('data', function (data) {
+    console.log('tcp "data" event from port %d', port);
+    io.emit('tcp data', {
+      port: address.port,
+      target: address.target,
+      address: address.address,
+      buf: data.toString('binary')
+    });
+  });
+
+  socket.on('end', function () {
+    console.log('tcp "end" event from port %d', port);
+    io.emit('tcp end', address);
+  });
+
+  socket.on('close', function () {
+    console.log('tcp "close" event from port %d', port);
+    io.emit('tcp close', address);
+  });
+
+  // keep reference to TCP socket for "io" events
+  sockets[key] = socket;
+});
+
+io.on('tcp data', function (data) {
+  // incoming data from one of the remote connected TCP sockets
+  console.log('"tcp data"', data);
+  var port = data.target;
+  var key = port + ':' + data.address + ':' + data.port;
+  var socket = sockets[key];
+  var buf = new Buffer(data.buf, 'binary');
+  socket.write(data);
+});
+
+io.on('tcp end', function (data) {
+  console.log('"tcp end"', data);
+  var port = data.target;
+  var key = port + ':' + data.address + ':' + data.port;
+  var socket = sockets[key];
+  socket.end();
+});
+
+io.on('tcp close', function (data) {
+  console.log('"tcp close"', data);
+  var port = data.target;
+  var key = port + ':' + data.address + ':' + data.port;
+  var socket = sockets[key];
+  socket.destroy();
+});
+
+// UDP-related events
 io.on('udp', function (data) {
   console.log('"udp"', data);
 
@@ -94,8 +163,4 @@ io.on('udp', function (data) {
 
   // relay the packet to the specified AR.Drone UDP port
   server.send(msg, 0, msg.length, port, '127.0.0.1');
-});
-
-io.on('disconnect', function () {
-  console.log('socket disconnected!');
 });

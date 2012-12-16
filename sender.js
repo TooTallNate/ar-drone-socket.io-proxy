@@ -39,6 +39,65 @@ var relayPort = parseInt(process.env.RELAY_PORT, 10) || 8080;
 var servers = {};
 
 /**
+ * Create the TCP servers.
+ */
+
+Object.keys(PORTS).forEach(function (name) {
+  var data = PORTS[name];
+  if (data.type != 'tcp') return;
+
+  var port = data.port;
+  var server = net.createServer(function (socket) {
+
+    var address = {
+      address: socket.remoteAddress,
+      port: socket.remotePort,
+      target: port
+    };
+    var key = address.address + ':' + address.port;
+    server.sockets[key] = socket;
+
+    console.log('tcp %d "connect" event', port, key);
+
+    socket.on('data', function (data) {
+      console.log('tcp %d "data" event (%d bytes)', port, data.length);
+      io.emit('tcp data', {
+        port: address.port,
+        target: address.target,
+        address: address.address,
+        buf: data.toString('binary')
+      });
+    });
+
+    socket.on('end', function () {
+      console.log('tcp %d "end" event', port);
+      io.emit('tcp end', address);
+    });
+
+    socket.on('close', function () {
+      console.log('tcp %d "close" event', port);
+      io.emit('tcp close', address);
+    });
+
+    // tell the relay client that we've received a TCP connection
+    io.emit('tcp connect', address);
+  });
+
+  server.on('listening', function () {
+    var address = server.address();
+    console.log('TCP server listening %s:%s', address.address, address.port);
+  });
+
+  // map of sockets connected to this
+  server.sockets = {};
+
+  // bind to the AR.Drone port
+  server.listen(port);
+
+  servers[port] = server;
+});
+
+/**
  * Create the UDP servers.
  */
 
@@ -81,10 +140,42 @@ var io = sio.connect('http://' + relayHost + ':' + relayPort);
 // this is the "sender client"
 io.emit('mode', 'sender');
 
+// socket.io events
 io.on('connect', function () {
   console.log('"relay server" connected!');
 });
 
+io.on('disconnect', function () {
+  console.log('socket disconnected!');
+});
+
+// TCP-related events
+io.on('tcp data', function (data) {
+  console.log('"tcp data"', data);
+  var server = servers[data.target];
+  var key = data.address + ':' + data.port;
+  var socket = server.sockets[key];
+  var buf = new Buffer(data.buf, 'binary');
+  socket.write(buf);
+});
+
+io.on('tcp end', function (data) {
+  console.log('"tcp end"', data);
+  var server = servers[data.target];
+  var key = data.address + ':' + data.port;
+  var socket = server.sockets[key];
+  socket.end();
+});
+
+io.on('tcp close', function (data) {
+  console.log('"tcp close"', data);
+  var server = servers[data.target];
+  var key = data.address + ':' + data.port;
+  var socket = server.sockets[key];
+  socket.destroy();
+});
+
+// UDP-related events
 io.on('udp', function (data) {
   console.log('"udp"', data);
 
@@ -100,8 +191,4 @@ io.on('udp', function (data) {
   var returnPort = server.lastRinfo.port;
   console.log('sending back to %j %j', returnAddress, returnPort);
   server.send(msg, 0, msg.length, returnPort, returnAddress);
-});
-
-io.on('disconnect', function () {
-  console.log('socket disconnected!');
 });
