@@ -50,7 +50,7 @@ Object.keys(PORTS).forEach(function (name) {
       port: port,
       msg: msg.toString('binary')
     };
-    console.log('"message":', obj);
+    console.log('"message":', obj, rinfo);
     socket.emit('udp', obj);
 
     // save the return info so we know who to send UDP packets back to
@@ -94,6 +94,7 @@ socket.on('udp', function (data) {
   // relay the packet back to the UDP port that we last heard from on this port
   var returnAddress = server.lastRinfo.address;
   var returnPort = server.lastRinfo.port;
+  console.log('sending back to %j %j', returnAddress, returnPort);
   server.send(msg, 0, msg.length, returnPort, returnAddress);
 });
 
