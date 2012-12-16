@@ -53,10 +53,18 @@ io.sockets.on('connection', function (socket) {
     switch (mode) {
       case 'sender':
         // the program sending commands to the AR.Drone
+        if (sender) {
+          // some old sender socket? try to disconnect...
+          sender.disconnect();
+        }
         sender = socket;
         break;
       case 'receiver':
         // the AR.Drone itself
+        if (receiver) {
+          // some old receiver socket? try to disconnect...
+          receever.disconnect();
+        }
         receiver = socket;
         break;
       default:
