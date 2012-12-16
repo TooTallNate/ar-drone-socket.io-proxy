@@ -54,7 +54,7 @@ Object.keys(PORTS).forEach(function (name) {
       port: port,
       msg: msg.toString('binary')
     };
-    console.log('"message" port %d (%d byes)', obj.port, msg.length);
+    console.log('"message" on port %d from %s:%s (%d bytes)', obj.port, rinfo.address, rinfo.port, msg.length);
     io.emit('udp', obj);
   });
 
