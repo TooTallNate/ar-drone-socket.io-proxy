@@ -186,3 +186,21 @@ io.on('udp', function (data) {
   // relay the packet to the specified AR.Drone UDP port
   server.send(msg, 0, msg.length, port, '127.0.0.1');
 });
+
+
+// DEBUG - run with `--expose_gc`
+if ('function' == typeof gc) {
+  // the AR.Drone keeps getting a "Killed" message when getting the TCP video
+  // stream... Attempt to forcefully free memory once per second...
+  var os = require('os');
+  setInterval(function () {
+    console.log('running gc()...');
+    gc();
+
+    var mem = process.memoryUsage();
+    mem.freemem = os.freemem();
+    mem.totalmem = os.totalmem();
+    mem.freePercent = mem.freemem / mem.totalmem * 100;
+    console.log('memory usage:', mem);
+  }, 1000);
+}
