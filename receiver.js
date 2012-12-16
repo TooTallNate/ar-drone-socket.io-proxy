@@ -126,7 +126,7 @@ io.on('tcp connect', function (address) {
   sockets[key] = socket;
 });
 
-io.on('tcp data', function (data, fn) {
+io.on('tcp data', function (data) {
   // incoming data from one of the remote connected TCP sockets
   var port = data.target;
   var buf = new Buffer(data.buf, 'binary');
@@ -136,7 +136,11 @@ io.on('tcp data', function (data, fn) {
   try {
     socket.write(data, function () {
       console.log('done writing...', arguments);
-      fn();
+      io.emit('tcp writedone', {
+        port: data.port,
+        target: data.target,
+        address: data.address
+      });
     });
   } catch (e) {
     console.error(e);
