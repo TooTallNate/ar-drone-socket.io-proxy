@@ -151,7 +151,10 @@ var netServer = net.createServer(function (socket) {
         receiver.emit('tcp connect', { port: port });
         socket.pause();
         socket.on('data', buffer);
-        socket.removeBuffer = function () { socket.removeListener('data', buffer); };
+        socket.removeBuffer = function () {
+          socket.resume();
+          return socket.removeListener('data', buffer);
+        };
         senderSockets.push(socket);
         break;
       case 1: // receiver (AR.Drone)
@@ -182,7 +185,7 @@ var netServer = net.createServer(function (socket) {
         break;
       default: // shouldn't happen... abort
         socket.destroy();
-        return;
+        break;
     }
   }
 
