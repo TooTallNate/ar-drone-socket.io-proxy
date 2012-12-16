@@ -76,7 +76,7 @@ io.sockets.on('connection', function (socket) {
 
   function proxyEvent (event) {
     socket.on(event, function (data) {
-      console.log('"%s" event from %j:', event, socket.relayMode, data);
+      console.log('"%s" event from %j', event, socket.relayMode);
       var target;
       if (socket === sender) {
         target = receiver;

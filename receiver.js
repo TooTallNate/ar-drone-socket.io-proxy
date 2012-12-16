@@ -101,7 +101,7 @@ io.on('tcp connect', function (address) {
   });
 
   socket.on('data', function (data) {
-    console.log('tcp "data" event from port %d', port);
+    console.log('tcp "data" event from port %d (%d bytes)', port, data.length);
     io.emit('tcp data', {
       port: address.port,
       target: address.target,
@@ -126,11 +126,11 @@ io.on('tcp connect', function (address) {
 
 io.on('tcp data', function (data) {
   // incoming data from one of the remote connected TCP sockets
-  console.log('"tcp data"', data);
   var port = data.target;
+  var buf = new Buffer(data.buf, 'binary');
+  console.log('"tcp data" from sender for port %d (%d bytes)', data, buf.length);
   var key = port + ':' + data.address + ':' + data.port;
   var socket = sockets[key];
-  var buf = new Buffer(data.buf, 'binary');
   socket.write(data);
 });
 
@@ -152,7 +152,6 @@ io.on('tcp close', function (data) {
 
 // UDP-related events
 io.on('udp', function (data) {
-  console.log('"udp"', data);
 
   // construct a Buffer for the UDP packet
   var msg = new Buffer(data.msg, 'binary');
@@ -160,6 +159,8 @@ io.on('udp', function (data) {
   // get the UDP server that will send the UDP packet
   var port = data.port;
   var server = sockets[port];
+
+  console.log('"udp" for port %d (%d bytes)', port, msg.length);
 
   // relay the packet to the specified AR.Drone UDP port
   server.send(msg, 0, msg.length, port, '127.0.0.1');

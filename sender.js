@@ -151,11 +151,11 @@ io.on('disconnect', function () {
 
 // TCP-related events
 io.on('tcp data', function (data) {
-  console.log('"tcp data"', data);
   var server = servers[data.target];
   var key = data.address + ':' + data.port;
   var socket = server.sockets[key];
   var buf = new Buffer(data.buf, 'binary');
+  console.log('"tcp data" from receiver on port %d (%d bytes)', data.target, buf.length);
   socket.write(buf);
 });
 
@@ -177,7 +177,6 @@ io.on('tcp close', function (data) {
 
 // UDP-related events
 io.on('udp', function (data) {
-  console.log('"udp"', data);
 
   // construct a Buffer for the UDP packet
   var msg = new Buffer(data.msg, 'binary');
@@ -185,6 +184,8 @@ io.on('udp', function (data) {
   // get the UDP server that will send the UDP packet
   var port = data.port;
   var server = servers[port];
+
+  console.log('"udp" for port %d (%d bytes)', port, msg.length);
 
   // relay the packet back to the UDP port that we last heard from on this port
   var returnAddress = server.lastRinfo.address;
