@@ -24,13 +24,6 @@ var receiver;
 var sender;
 
 /**
- * Array of buffered UDP messages for when there's
- * no "receiver client" connected.
- */
-
-var buffer = [];
-
-/**
  * Setup socket.io server.
  */
 
@@ -65,13 +58,6 @@ io.sockets.on('connection', function (socket) {
       case 'receiver':
         // the AR.Drone itself
         receiver = socket;
-        if (buffer.length > 0) {
-          console.log('flushing %d "udp" events', buffer.length);
-          buffer.forEach(function (obj) {
-            receiver.emit('udp', obj);
-          });
-          buffer.splice(0);
-        }
         break;
       default:
         // shouldn't happen...
@@ -90,6 +76,12 @@ io.sockets.on('connection', function (socket) {
     } else {
       // shouldn't happen...
       socket.disconnect();
+      return;
+    }
+    if (!target) {
+      // "receiver" or "sender" must not be connected yet...
+      // drop packet on floor...
+      console.log('dropping packet on floor - target not connected');
       return;
     }
     target.emit('udp', obj);
