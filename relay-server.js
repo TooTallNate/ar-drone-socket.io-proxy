@@ -39,7 +39,7 @@ io.sockets.on('connection', function (socket) {
   console.log('socket connected...');
 
   socket.on('disconnect', function () {
-    console.log('"disconnect" event');
+    console.log('"disconnect" event from %j', socket.relayMode);
     if (socket === receiver) {
       receiver = null;
     } else if (socket === sender) {
