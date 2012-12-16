@@ -3,112 +3,95 @@
  * Module dependencies.
  */
 
-var dgram = require('dgram');
 var sio = require('socket.io');
 
 /**
- * Constants.
+ * Socket.io TCP port to bind to. Port 8080 by default.
  */
 
-var PORTS = require('./ports');
-
-var udpServers = {};
+var port = parseInt(process.argv[2], 10) || 8080;
 
 /**
- * The connection socket.io client connection.
+ * The connection to the socket.io "receiver client".
  */
 
-var socket;
+var receiver;
 
 /**
- * Array of buffered UDP messages for when there's no "socket" connected.
+ * The connection to the socket.io "sender client".
+ */
+
+var sender;
+
+/**
+ * Array of buffered UDP messages for when there's
+ * no "receiver client" connected.
  */
 
 var buffer = [];
 
 /**
- * Setup UDP servers.
- */
-
-Object.keys(PORTS).forEach(function (name) {
-  var port = PORTS[name];
-  var server = dgram.createSocket('udp4');
-
-  server.on("message", function (msg, rinfo) {
-    console.log('"message"', msg, rinfo);
-    //console.log(0, msg.toString('binary'));
-    var obj = {
-      port: port,
-      msg: msg.toString('binary')
-      //rinfo: rinfo
-    };
-    if (socket) {
-      sendMessage(obj);
-    } else {
-      buffer.push(obj);
-    }
-  });
-
-  server.on("listening", function () {
-    var address = server.address();
-    console.log("UDP server listening " +
-        address.address + ":" + address.port);
-  });
-
-  server.bind(port);
-
-  udpServers[port] = server;
-});
-
-/**
  * Setup socket.io server.
  */
 
-var io = sio.listen(8080);
+console.log('socket.io "relay server" starting on port %d', port);
+var io = sio.listen(port);
 
 /**
  * We wait for the socket.io client connection before we can relay any UDP
  * traffic. Simply expose the "socket" variable to the global scope.
  */
 
-io.sockets.on('connection', function (_socket) {
-  if (socket) {
-    // already a connected socket
-    _socket.disconnect();
-    return;
-  } else {
-    socket = _socket;
-  }
-
-  console.log('"connection"', socket);
-
-  socket.on('udp', function (obj) {
-    var msg = new Buffer(obj.msg, 'binary');
-    var port = obj.port;
-    var socket = udpServers[port];
-    socket.send(msg, 0, msg.length, port, '127.0.0.1');
-  });
+io.sockets.on('connection', function (socket) {
+  console.log('socket connected...');
 
   socket.on('disconnect', function () {
-    console.log('socket disconnected...');
-    socket = null;
-    //clearInterval(i);
+    console.log('"disconnect" event');
+    if (socket === receiver) {
+      receiver = null;
+    } else if (socket === sender) {
+      sender = null;
+    }
   });
 
-  if (buffer.length > 0) {
-    console.log('flushing %d "message" events', buffer.length);
-    buffer.forEach(sendMessage);
-    buffer.splice(0);
-  }
+  socket.on('mode', function (mode) {
+    console.log('%j connected!', mode);
+    socket.relayMode = mode;
+    switch (mode) {
+      case 'sender':
+        // the program sending commands to the AR.Drone
+        sender = socket;
+        break;
+      case 'receiver':
+        // the AR.Drone itself
+        receiver = socket;
+        if (buffer.length > 0) {
+          console.log('flushing %d "udp" events', buffer.length);
+          buffer.forEach(function (obj) {
+            receiver.emit('udp', obj);
+          });
+          buffer.splice(0);
+        }
+        break;
+      default:
+        // shouldn't happen...
+        socket.disconnect();
+        break;
+    }
+  });
 
-  /*
-  var i = setInterval(function () {
-    socket.emit('udp', { hello: new Date() });
-  }, 1000);
-  */
+  socket.on('udp', function (obj) {
+    console.log('"udp" event from %j:', socket.relayMode, obj);
+    var target;
+    if (socket === sender) {
+      target = receiver;
+    } else if (socket === receiver) {
+      target = sender;
+    } else {
+      // shouldn't happen...
+      socket.disconnect();
+      return;
+    }
+    target.emit('udp', obj);
+  });
 });
-
-function sendMessage (obj) {
-  //console.error(obj);
-  socket.emit('udp', obj);
-}
