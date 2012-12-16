@@ -1,15 +1,30 @@
 
 /**
+ * This is the "relay-server". It binds a "socket.io" server to port 8080.
+ * The "sender" and "receiver" clients both connect to this "socket.io" relay
+ * server and communicate UDP messges over it. It also binds a regular "net"
+ * server to port 8081 which is used to 
+ */
+
+/**
  * Module dependencies.
  */
 
+var net = require('net');
 var sio = require('socket.io');
+var assert = require('assert');
 
 /**
  * Socket.io TCP port to bind to. Port 8080 by default.
  */
 
 var port = parseInt(process.argv[2], 10) || 8080;
+
+/**
+ * "net" server TCP port to bind to. Port 8081 by default.
+ */
+
+var netPort = 8081;
 
 /**
  * The connection to the socket.io "receiver client".
@@ -27,8 +42,10 @@ var sender;
  * Setup socket.io server.
  */
 
-console.log('socket.io "relay server" starting on port %d', port);
-var io = sio.listen(port);
+var io = sio.listen(port, function () {
+  var address = this.address();
+  console.log('socket.io "relay server" listening: %s:%s', address.address, address.port);
+});
 
 /**
  * We wait for the socket.io client connection before we can relay any UDP
@@ -75,8 +92,8 @@ io.sockets.on('connection', function (socket) {
   });
 
   function proxyEvent (event) {
-    socket.on(event, function () {
-      console.log('"%s" event from %j (%d args)', event, socket.relayMode, arguments.length);
+    socket.on(event, function (data) {
+      console.log('"%s" event from %j (%d args)', event, socket.relayMode);
       var target;
       if (socket === sender) {
         target = receiver;
@@ -93,17 +110,89 @@ io.sockets.on('connection', function (socket) {
         console.log('dropping data on floor - target not connected');
         return;
       }
-      var args = Array.prototype.slice.call(arguments, 0);
-      args.unshift(event);
-      target.emit.apply(target, args);
+      target.emit(event, data);
     });
   }
 
-  [ 'udp',
-    'tcp connect',
-    'tcp data',
-    'tcp end',
-    'tcp close',
-    'tcp writedone'
+  [ 'udp'
+    //'tcp connect'
   ].forEach(proxyEvent);
+});
+
+
+/**
+ * The "net" server waits for TCP connections and parses the first 3 bytes:
+ *
+ *   0: unsigned 8-bit integer: 0=sender, 1=receiver
+ *   1-2: unsigned 16-bit integer: sender=port to request, receiver=0 (not used)
+ */
+
+var senderSockets = [];
+
+var netServer = net.createServer(function (socket) {
+  console.log('"connect"', socket);
+
+  // parse the first 3 bytes of the connection
+  socket.once('data', parseHeader);
+
+  function parseHeader (data) {
+    assert(data.length >= 3); // if the first buffer isn't >= 3 bytes then we're fucked
+    var leftover;
+    switch (data[0]) {
+      case 0: // sender (program)
+        // need to parse the next two bytes to determine the "port" to request
+        var port = data.readUInt16BE(1);
+        if (data.length > 3) {
+          // got some extra data already... need to buffer it until the "receiver
+          // socket" is connected.
+          leftover = data.slice(3);
+          buffer(leftover);
+        }
+        receiver.emit('tcp connect', { port: port });
+        socket.pause();
+        socket.on('data', buffer);
+        socket.removeBuffer = function () { socket.removeListener('data', buffer); };
+        senderSockets.push(socket);
+        break;
+      case 1: // receiver (AR.Drone)
+        // get the next "sender socket" and begin piping data both ways
+        var sender = senderSockets.shift();
+        if (!sender) {
+          // unexpected "receiver socket"... abort
+          socket.destroy();
+          return;
+        }
+        if (data.length > 3) {
+          // got some extra data already... write it immediately to the "sender
+          // socket"
+          leftover = data.slice(3);
+          sender.write(leftover);
+        }
+        if (sender.relayLeftover) {
+          sender.relayLeftover.forEach(function (b) {
+            socket.write(b);
+          });
+          sender.relayLeftover = null; // for the gc
+        }
+        // remove the "buffer" data listener from before
+        sender.removeBuffer();
+        // just start piping!!! let the node gods take us from here...
+        socket.pipe(sender);
+        sender.pipe(socket);
+        break;
+      default: // shouldn't happen... abort
+        socket.destroy();
+        return;
+    }
+  }
+
+  function buffer (data) {
+    if (!socket.relayLeftover) socket.relayLeftover = [];
+    socket.relayLeftover.push(data);
+  }
+});
+
+netServer.listen(netPort, function () {
+  var address = this.address();
+  console.log('TCP net "relay server" listening:   %s:%s', address.address, address.port);
 });
