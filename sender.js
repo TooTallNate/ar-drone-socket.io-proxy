@@ -66,7 +66,12 @@ Object.keys(PORTS).forEach(function (name) {
         target: address.target,
         address: address.address,
         buf: data.toString('binary')
+      }, function () {
+        console.log('done writing...');
+        // backpressure...
+        socket.resume();
       });
+      socket.pause();
     });
 
     socket.on('end', function () {
@@ -150,13 +155,20 @@ io.on('disconnect', function () {
 });
 
 // TCP-related events
-io.on('tcp data', function (data) {
+io.on('tcp data', function (data, fn) {
   var server = servers[data.target];
   var key = data.address + ':' + data.port;
   var socket = server.sockets[key];
   var buf = new Buffer(data.buf, 'binary');
   console.log('"tcp data" from receiver on port %d (%d bytes)', data.target, buf.length);
-  socket.write(buf);
+  try {
+    socket.write(buf, function () {
+      console.log('done writing...', arguments);
+      fn();
+    });
+  } catch (e) {
+    console.error(e);
+  }
 });
 
 io.on('tcp end', function (data) {

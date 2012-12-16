@@ -75,8 +75,8 @@ io.sockets.on('connection', function (socket) {
   });
 
   function proxyEvent (event) {
-    socket.on(event, function (data) {
-      console.log('"%s" event from %j', event, socket.relayMode);
+    socket.on(event, function () {
+      console.log('"%s" event from %j (%d args)', event, socket.relayMode, arguments.length);
       var target;
       if (socket === sender) {
         target = receiver;
@@ -93,7 +93,9 @@ io.sockets.on('connection', function (socket) {
         console.log('dropping data on floor - target not connected');
         return;
       }
-      target.emit(event, data);
+      var args = Array.prototype.slice.call(arguments, 0);
+      args.unshift(event);
+      target.emit.apply(target, args);
     });
   }
 
