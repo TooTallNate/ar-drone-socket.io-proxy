@@ -16,33 +16,24 @@ This setup is broken up into 3 parts:
 ----------------
 ### Relay Server
 
-The "relay server" is a node.js script that binds to TCP port `8080` and UDP ports
-`5551` through `5559`. It awaits for an AR.Drone to connect to the TCP port over
-the internet, and relays any "client" UDP activity over the HTTP connection to
-finally reach the AR.Drone.
+The "relay server" is a node.js script that binds to TCP ports `8080` and `8081`.
+It awaits for an AR.Drone to connect to the "socket.io" server over the internet,
+and relays any "client" UDP activity over the HTTP connection to finally reach
+the AR.Drone.
 
 The "relay server" should ideally be a server that has a predictable hostname
 (i.e. static IP) because you will be contacting the relay server from both the
 AR.Drone and the "client".
 
-_Note:_ UDP packets sent back _from_ the drone _to_ the relay server currently
-get lost there, and never make it back to the originating "client". This will
-hopefully be fixed soon (but will most likely involve a "relay client" running on
-the client's machine).
-
 #### Forwarding ports
 
-The relay server should be a remote server where you have access to UDP ports
-`5551` through `5559`. These are the ports that the AR.Drone uses to communicate over.
+The relay server should be a remote server where you have access to TCP ports
+`8080` and `8081`.
 
 I chose to set the relay server up on my Mac Mini at my home, and forward the
 ports through my Time Capsule using Airport Utility:
 
-![](http://f.cl.ly/items/1p051N1V3I431d1k0u21/Screen%20Shot%202012-12-11%20at%208.46.59%20PM.png)
-
-For the relaying to work, you _also_ must forward TCP port `8080`, which is the
-port where the UDP messages received are relayed to the drone over an HTTP
-transport.
+![](http://f.cl.ly/items/0G2x2Z201L2m2c2k292u/Screen%20Shot%202012-12-16%20at%205.39.43%20PM.png)
 
 #### Start the "relay server"
 
@@ -75,8 +66,14 @@ Be sure the MiFi is on and broadcasting before going to the next step...
 
 #### Prepare Drone to run the receiver client
 
-__TODO:__ add instructions for transfering `node` executable and socket.io to
-AR.Drone's `/data` dir...
+You can use `ftp` to transfer the `node` executable, the `socket.io-client`
+module, the `receiver.js` and `ports.js` files to the AR.Drone. The username is
+"anonymous" with no password.
+
+``` bash
+$ ftp 192.168.1.1
+...
+```
 
 #### Connect drone to MiFi
 
@@ -89,7 +86,7 @@ The drone itself is somewhat tedious to set up. This process can be improved..
   1. On laptop, connect to your MiFi access point (`natefi` in my case)
   1. `ping` your "relay server" hostname (`n8.io` in my case) in order to manually resolve the IP address (required because I haven't figured out how to get DNS working on the drone yet)
   1. Telnet to `192.168.1.3`. This is the AR.drone in "client" mode connected to the MiFi.
-  1. cd to `/data` and fire up the relay client on the drone: `RELAY_HOST=1.2.3.4 ./node client.js </dev/null >/dev/null 2>&1 &` (replace `1.2.3.4` with the resolved IP of your "relay server")
+  1. cd to `/data` and fire up the relay client on the drone: `RELAY_HOST=1.2.3.4 ./node receiver.js </dev/null >/dev/null 2>&1 &` (replace `1.2.3.4` with the resolved IP of your "relay server")
   1. `exit` the telnet session. At this point, the Drone is ready to receive commands from the "relay server".
 
 
@@ -97,7 +94,24 @@ The drone itself is somewhat tedious to set up. This process can be improved..
 ### The controller - "sender"
 
 The "sender" is the computer that is going to be sending commands to the AR.Drone
-over the MiFi connection.
+over the MiFi connection. To begin you need to run the "sender.js" script in order
+to bind the AR.Drone ports locally:
 
+``` bash
+$ node sender.js
+```
+
+Once that is running you can send AR.Drone commands to "localhost". Some
+recommended "controllers":
+
+  * [node-dronestream](https://github.com/bkw/node-dronestream)
+  * [drone-browser](https://github.com/functino/drone-browser)
+
+You can also telnet directly to the drone over the MiFi connection by connecting
+to port `2223`:
+
+``` bash
+$ telnet localhost 2223
+```
 
 [DroneGames]: http://dronegames.co/
