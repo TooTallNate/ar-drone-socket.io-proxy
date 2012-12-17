@@ -53,6 +53,14 @@ Object.keys(PORTS).forEach(function (name) {
 
     console.log('tcp %d "connect" event', port);
 
+    socket.on('end', function () {
+      console.log('tcp %d "end" event', port);
+    });
+
+    socket.on('close', function () {
+      console.log('tcp %d "close" event', port);
+    });
+
     // connect to the "relay server" TCP relay port
     var relaySocket = net.connect({ host: relayHost, port: relayTcpPort });
 
@@ -67,14 +75,6 @@ Object.keys(PORTS).forEach(function (name) {
     // pipe...
     socket.pipe(relaySocket);
     relaySocket.pipe(socket);
-
-    socket.on('end', function () {
-      console.log('tcp %d "end" event', port);
-    });
-
-    socket.on('close', function () {
-      console.log('tcp %d "close" event', port);
-    });
 
   });
 
