@@ -31,6 +31,8 @@ var relayHost = process.env.RELAY_HOST || 'n8.io';
 
 var relayPort = parseInt(process.env.RELAY_PORT, 10) || 8080;
 
+var relayTcpPort = 8081;
+
 /**
  * Map of UDP clients and TCP sockets that will send messages to the
  * AR.Drone ports.
@@ -88,12 +90,11 @@ io.on('disconnect', function () {
 });
 
 // TCP-related events
-io.on('tcp connect', function (address) {
+io.on('tcp connect', function (data) {
   // for every TCP connection opened, we need to open one locally against the
   // AR.Drone port and relay all related events back to the "relay server"
-  console.log('"tcp connect"', address);
-  var port = address.target;
-  var key = port + ':' + address.address + ':' + address.port;
+  console.log('"tcp connect"', data);
+  var port = data.port;
 
   // create a TCP connection to the specified port to the AR.Drone (localhost)
   var socket = net.connect({ port: port }, function () {
@@ -102,74 +103,32 @@ io.on('tcp connect', function (address) {
 
   socket.on('data', function (data) {
     console.log('tcp "data" event from port %d (%d bytes)', port, data.length);
-    io.emit('tcp data', {
-      port: address.port,
-      target: address.target,
-      address: address.address,
-      buf: data.toString('binary')
-    });
-    socket.pause();
-    // resume upon socket.io "tcp writedone" event
   });
 
   socket.on('end', function () {
     console.log('tcp "end" event from port %d', port);
-    io.emit('tcp end', address);
   });
 
   socket.on('close', function () {
     console.log('tcp "close" event from port %d', port);
-    io.emit('tcp close', address);
   });
 
-  // keep reference to TCP socket for "io" events
-  sockets[key] = socket;
+  // create a TCP connection to the "relay server" TCP port
+  var relaySocket = net.connect({ host: relayHost, port: relayTcpPort });
+
+  // construct the "header"
+  var header = new Buffer(3);
+  header[0] = 1; // this is the "receiver"
+  // tell the relay server what port to this socket is responding to
+  header.writeUInt16BE(port, 1);
+  relaySocket.write(header);
+
+  // pipe ...
+  socket.pipe(relaySocket);
+  relaySocket.pipe(socket);
+
 });
 
-io.on('tcp data', function (data) {
-  // incoming data from one of the remote connected TCP sockets
-  var port = data.target;
-  var buf = new Buffer(data.buf, 'binary');
-  console.log('"tcp data" from sender for port %d (%d bytes)', data, buf.length);
-  var key = port + ':' + data.address + ':' + data.port;
-  var socket = sockets[key];
-  try {
-    socket.write(data, function () {
-      console.log('done writing...', arguments);
-      io.emit('tcp writedone', {
-        port: data.port,
-        target: data.target,
-        address: data.address
-      });
-    });
-  } catch (e) {
-    console.error(e);
-  }
-});
-
-io.on('tcp end', function (data) {
-  console.log('"tcp end"', data);
-  var port = data.target;
-  var key = port + ':' + data.address + ':' + data.port;
-  var socket = sockets[key];
-  socket.end();
-});
-
-io.on('tcp close', function (data) {
-  console.log('"tcp close"', data);
-  var port = data.target;
-  var key = port + ':' + data.address + ':' + data.port;
-  var socket = sockets[key];
-  socket.destroy();
-});
-
-io.on('tcp writedone', function (data) {
-  console.log('"tcp writedone"', data);
-  var port = data.target;
-  var key = port + ':' + data.address + ':' + data.port;
-  var socket = sockets[key];
-  socket.resume();
-});
 
 // UDP-related events
 io.on('udp', function (data) {
