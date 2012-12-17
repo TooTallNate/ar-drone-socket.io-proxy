@@ -142,6 +142,11 @@ var netServer = net.createServer(function (socket) {
     var port = data.readUInt16BE(1);
     switch (data[0]) {
       case 0: // sender (program)
+        if (!receiver) {
+          // no "receiver client" connected... close this socket...
+          socket.destroy();
+          return;
+        }
         if (data.length > 3) {
           // got some extra data already... need to buffer it until the "receiver
           // socket" is connected.
