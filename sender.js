@@ -84,7 +84,7 @@ Object.keys(PORTS).forEach(function (name) {
   });
 
   // bind to the AR.Drone port
-  server.listen(port);
+  server.listen(data.local || port);
 
   servers[port] = server;
 });

@@ -5,6 +5,7 @@
  */
 
 module.exports = {
+  TELNET:         { port: 23, type: 'tcp', local: 2223 },
   FTP:            { port: 5551, type: 'tcp' },
   AUTH:           { port: 5552, type: '???' },
   VIDEO_RECORDER: { port: 5553, type: 'tcp' },
