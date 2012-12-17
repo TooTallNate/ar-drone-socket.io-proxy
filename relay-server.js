@@ -124,10 +124,10 @@ io.sockets.on('connection', function (socket) {
  * The "net" server waits for TCP connections and parses the first 3 bytes:
  *
  *   0: unsigned 8-bit integer: 0=sender, 1=receiver
- *   1-2: unsigned 16-bit integer: sender=port to request, receiver=0 (not used)
+ *   1-2: unsigned 16-bit integer: sender=port to request, receiver=port responding with
  */
 
-var senderSockets = [];
+var senderSockets = {};
 
 var netServer = net.createServer(function (socket) {
   console.log('"connect"', socket);
@@ -138,10 +138,10 @@ var netServer = net.createServer(function (socket) {
   function parseHeader (data) {
     assert(data.length >= 3); // if the first buffer isn't >= 3 bytes then we're fucked
     var leftover;
+    // need to parse the next two bytes to determine the "port" of the request
+    var port = data.readUInt16BE(1);
     switch (data[0]) {
       case 0: // sender (program)
-        // need to parse the next two bytes to determine the "port" to request
-        var port = data.readUInt16BE(1);
         if (data.length > 3) {
           // got some extra data already... need to buffer it until the "receiver
           // socket" is connected.
@@ -155,11 +155,17 @@ var netServer = net.createServer(function (socket) {
           socket.resume();
           return socket.removeListener('data', buffer);
         };
-        senderSockets.push(socket);
+        if (!senderSockets[port]) senderSockets[port] = [];
+        senderSockets[port].push(socket);
         break;
       case 1: // receiver (AR.Drone)
         // get the next "sender socket" and begin piping data both ways
-        var sender = senderSockets.shift();
+        if (!senderSockets[port]) {
+          // unexpected "receiver socket"... abort
+          socket.destroy();
+          return;
+        }
+        var sender = senderSockets[port].shift();
         if (!sender) {
           // unexpected "receiver socket"... abort
           socket.destroy();
