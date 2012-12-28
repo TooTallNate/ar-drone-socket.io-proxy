@@ -104,8 +104,9 @@ $ node sender.js
 Once that is running you can send AR.Drone commands to "localhost". Some
 recommended "controllers":
 
-  * [node-dronestream](https://github.com/bkw/node-dronestream)
   * [drone-browser](https://github.com/functino/drone-browser)
+  * [node-drone-joystick](https://github.com/TooTallNate/node-drone-joystick)
+  * [node-dronestream](https://github.com/bkw/node-dronestream)
 
 You can also telnet directly to the drone over the MiFi connection by connecting
 to port `2223`:
