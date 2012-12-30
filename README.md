@@ -77,17 +77,13 @@ $ ftp 192.168.1.1
 
 #### Connect drone to MiFi
 
-The drone itself is somewhat tedious to set up. This process can be improved..
+The drone needs to connect to the MiFi as a wifi client and then run the
+`receiver.js` program. The `connect.js` script does this for us nicely:
 
   1. Power up AR.Drone
-  1. Conncet to access point `ardrone2_058438` on laptop (or whatever _your_ AR.Drone's ESSID is)
-  1. Telnet to `192.168.1.1`. Your are connected to the AR.Drone in "host" mode.
-  1. Copy and paste the `mifi.sh` script; the telnet connection will be killed
-  1. On laptop, connect to your MiFi access point (`natefi` in my case)
-  1. `ping` your "relay server" hostname (`n8.io` in my case) in order to manually resolve the IP address (required because I haven't figured out how to get DNS working on the drone yet)
-  1. Telnet to `192.168.1.3`. This is the AR.drone in "client" mode connected to the MiFi.
-  1. cd to `/data` and fire up the relay client on the drone: `RELAY_HOST=1.2.3.4 ./node receiver.js </dev/null >/dev/null 2>&1 &` (replace `1.2.3.4` with the resolved IP of your "relay server")
-  1. `exit` the telnet session. At this point, the Drone is ready to receive commands from the "relay server".
+  1. Connect to access point `ardrone2_058438` on laptop (or whatever _your_ AR.Drone's ESSID is)
+  1. Run `node connect.js` on your laptop, it will connect the drone to the MiFi and launch the "receiver" program
+  1. At this point, the AR.Drone is ready to receive commands from the "relay server"
 
 
 -----------------------------
