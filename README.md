@@ -102,6 +102,7 @@ recommended "controllers":
 
   * [drone-browser](https://github.com/functino/drone-browser)
   * [node-drone-joystick](https://github.com/TooTallNate/node-drone-joystick)
+  * [node-drone-video](https://github.com/TooTallNate/node-drone-video)
   * [node-dronestream](https://github.com/bkw/node-dronestream)
 
 You can also telnet directly to the drone over the MiFi connection by connecting
